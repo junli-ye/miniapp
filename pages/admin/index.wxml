@@ -1,0 +1,83 @@
+<view class="admin-container">
+  <!-- 航班列表 -->
+  <view class="flight-list">
+    <view class="list-header">
+      <text class="title">航班管理</text>
+      <button class="add-btn" bindtap="addFlight">添加航班</button>
+    </view>
+    
+    <view class="list-content">
+      <view wx:for="{{flights}}" wx:key="id" class="flight-item">
+        <view class="flight-info">
+          <text class="flight-no">{{item.flightNo}}</text>
+          <text class="airline">{{item.airline.nameZh}}</text>
+          <text class="destination">{{item.destination.airportZh}}</text>
+        </view>
+        <view class="actions">
+          <button size="mini" bindtap="editFlight" data-id="{{item._id}}">编辑</button>
+          <button size="mini" type="warn" bindtap="deleteFlight" data-id="{{item._id}}">删除</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑弹窗 -->
+  <view class="modal" wx:if="{{showEditModal}}">
+    <view class="modal-content">
+      <view class="modal-header">
+        <text>{{editingFlight ? '编辑航班' : '添加航班'}}</text>
+      </view>
+      <view class="modal-body">
+        <form bindsubmit="submitFlight">
+          <!-- 航班基本信息 -->
+          <view class="form-item">
+            <text class="label">航班号</text>
+            <input name="flightNo" value="{{editingFlight.flightNo}}" />
+          </view>
+          
+          <view class="form-item">
+            <text class="label">航空公司</text>
+            <picker name="airlineCode" range="{{airlineList}}" range-key="nameZh">
+              <view>{{selectedAirline.nameZh || '请选择'}}</view>
+            </picker>
+          </view>
+
+          <view class="form-item">
+            <text class="label">目的地</text>
+            <input name="destination" value="{{editingFlight.destination.airportZh}}" />
+          </view>
+
+          <view class="form-item">
+            <text class="label">起飞时间</text>
+            <input name="depTime" value="{{editingFlight.schedule.depTimeLocal}}" />
+          </view>
+
+          <view class="form-item">
+            <text class="label">班期</text>
+            <input name="days" value="{{editingFlight.schedule.days}}" />
+          </view>
+
+          <!-- 代码共享航班 -->
+          <view class="codeshare-section">
+            <text class="section-title">代码共享航班</text>
+            <view class="codeshare-list">
+              <view wx:for="{{editingFlight.codeshare}}" wx:key="index" class="codeshare-item">
+                <picker name="codeshareAirline{{index}}" range="{{airlineList}}" range-key="nameZh">
+                  <view>{{item.airline.nameZh || '请选择'}}</view>
+                </picker>
+                <input name="codeshareNo{{index}}" value="{{item.flightNo}}" />
+                <button size="mini" type="warn" bindtap="removeCodeshare" data-index="{{index}}">删除</button>
+              </view>
+            </view>
+            <button size="mini" bindtap="addCodeshare">添加代码共享</button>
+          </view>
+
+          <view class="form-actions">
+            <button type="primary" form-type="submit">保存</button>
+            <button bindtap="closeModal">取消</button>
+          </view>
+        </form>
+      </view>
+    </view>
+  </view>
+</view>

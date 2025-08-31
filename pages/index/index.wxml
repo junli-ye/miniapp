@@ -1,0 +1,164 @@
+<!-- 页面结构 -->
+
+<view class="container">
+  <!-- 顶部工具栏：语言切换、更新时间 -->
+  <view class="toolbar">
+    <view class="left-tools">
+      <button size="mini" class="lang-btn" bindtap="switchLang">
+        {{lang === 'zh' ? 'EN' : '中'}}
+      </button>
+      <view class="update-time">{{lang === 'zh' ? '最近更新' : 'Last Updated'}}：{{lastUpdated}}</view>
+    </view>
+    <view class="right-tools">
+      <text class="filter-toggle" bindtap="toggleFilterPanel">
+        {{lang === 'zh' ? '筛选' : 'Filter'}} {{filterPanelVisible ? '▼' : '▲'}}
+      </text>
+    </view>
+  </view>
+
+  <!-- 筛选控件 -->
+  <view class="filter-panel {{filterPanelVisible ? 'visible' : ''}}">
+    <view class="filter-header">
+      <text class="filter-title">{{lang === 'zh' ? '航班筛选' : 'Flight Filters'}}</text>
+      <text class="filter-clear" bindtap="clearFilters" wx:if="{{selectedCountry || selectedAirline || selectedDays}}">
+        {{lang === 'zh' ? '清除' : 'Clear'}}
+      </text>
+    </view>
+    <view class="filters">
+      <picker mode="selector" range="{{countryList}}" bindchange="onCountryChange">
+        <view class="filter-item {{selectedCountry ? 'active' : ''}}">
+          <view class="filter-content">
+            <text class="filter-label">{{lang === 'zh' ? '国家/地区' : 'Country/Region'}}</text>
+            <text class="filter-value">{{selectedCountry || (lang === 'zh' ? '不限' : 'Any')}}</text>
+          </view>
+          <text class="filter-arrow">▾</text>
+        </view>
+      </picker>
+      <picker mode="selector" range="{{airlineList}}" bindchange="onAirlineChange">
+        <view class="filter-item {{selectedAirline ? 'active' : ''}}">
+          <view class="filter-content">
+            <text class="filter-label">{{lang === 'zh' ? '航空公司' : 'Airline'}}</text>
+            <text class="filter-value">{{selectedAirline || (lang === 'zh' ? '不限' : 'Any')}}</text>
+          </view>
+          <text class="filter-arrow">▾</text>
+        </view>
+      </picker>
+      <picker mode="selector" range="{{daysList}}" bindchange="onDaysChange">
+        <view class="filter-item {{selectedDays ? 'active' : ''}}">
+          <view class="filter-content">
+            <text class="filter-label">{{lang === 'zh' ? '执行班期' : 'Schedule'}}</text>
+            <text class="filter-value">{{selectedDays || (lang === 'zh' ? '不限' : 'Any')}}</text>
+          </view>
+          <text class="filter-arrow">▾</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 区域切换tabs -->
+  <view class="tabs">
+    <view 
+      wx:for="{{regions}}" 
+      wx:key="key"
+      class="tab-item {{currentRegion === item.key ? 'active' : ''}}"
+      data-region="{{item.key}}"
+      bind:tap="switchRegion"
+    >
+      {{lang === 'zh' ? item.name : item.nameEn}}
+    </view>
+  </view>
+
+  <!-- 航班列表 -->
+  <view class="flight-list">
+    <!-- 空态展示 -->
+    <view wx:if="{{!flights.length}}" class="empty-state">
+      {{lang === 'zh' ? '暂无该区域航线信息' : 'No flights in this region.'}}
+    </view>
+    <!-- 航班卡片 -->
+    <view wx:for="{{flights}}" wx:key="id" class="flight-card">
+      <!-- 主卡片 -->
+      <view class="card-main">
+        <view class="card-header">
+          <view class="left-section">
+            <!-- 航司logo -->
+            <image class="airline-logo" src="{{item.airline.logo}}" mode="aspectFit" />
+            <!-- 航班基本信息 -->
+            <view class="flight-basic-info">
+              <view class="flight-title">
+                <text class="flight-no">{{item.flightNo}}</text>
+                <text class="airline-name">{{lang === 'zh' ? item.airline.nameZh : item.airline.nameEn}}</text>
+                <!-- 航空联盟标识 -->
+                <view wx:if="{{item.airline.alliance}}" class="alliance-badge" 
+                      bindtap="showAllianceInfo" 
+                      data-alliance="{{item.airline.alliance}}">
+                  <image 
+                    class="alliance-logo" 
+                    src="{{ALLIANCES[item.airline.alliance].logo}}" 
+                    mode="aspectFit"
+                  />
+                  <text class="alliance-name">{{lang === 'zh' ? ALLIANCES[item.airline.alliance].name : ALLIANCES[item.airline.alliance].nameEn}}</text>
+                </view>
+              </view>
+              <text class="aircraft">{{item.acType}}</text>
+            </view>
+          </view>
+        </view>
+        
+        <view class="card-body">
+          <view class="destination-info">
+            <view class="airport-info">
+              <text class="city">{{lang === 'zh' ? item.destination.airportZh : item.destination.airportEn}}</text>
+              <text class="iata">({{item.destination.iata}})</text>
+            </view>
+            <text class="country">{{lang === 'zh' ? item.country.zh : item.country.en}}</text>
+          </view>
+          
+          <view class="schedule-info">
+            <view class="time-section">
+              <text class="time">{{item.schedule.depTimeLocal}}</text>
+              <text class="days">{{item.schedule.days}}</text>
+            </view>
+            <text class="status {{item.remarks === (lang === 'zh' ? '正在执行' : 'Active') ? 'active' : ''}}">
+              {{lang === 'zh' ? item.remarks : item.remarksEn || item.remarks}}
+            </text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 代码共享航班子卡片 -->
+      <block wx:if="{{item.codeshare.length}}">
+        <view class="codeshare-section">
+          <text class="codeshare-header">{{lang === 'zh' ? '代码共享航班' : 'Codeshare Flights'}}</text>
+          <view class="codeshare-list">
+            <view wx:for="{{item.codeshare}}" wx:key="flightNo" wx:for-item="share" class="codeshare-item">
+              <view class="codeshare-main">
+                <view class="left-section">
+                  <!-- 航司logo -->
+                  <image class="codeshare-logo" src="{{share.airline.logo}}" mode="aspectFit" />
+                  <!-- 航班基本信息 -->
+                  <view class="codeshare-info">
+                    <view class="codeshare-title">
+                      <text class="codeshare-no">{{share.flightNo}}</text>
+                      <text class="codeshare-airline">{{lang === 'zh' ? share.airline.nameZh : share.airline.nameEn}}</text>
+                      <!-- 航空联盟标识 -->
+                      <view wx:if="{{share.airline.alliance}}" class="alliance-badge small" 
+                            bindtap="showAllianceInfo" 
+                            data-alliance="{{share.airline.alliance}}">
+                        <image 
+                          class="alliance-logo" 
+                          src="{{ALLIANCES[share.airline.alliance].logo}}" 
+                          mode="aspectFit"
+                        />
+                        <text class="alliance-name">{{lang === 'zh' ? ALLIANCES[share.airline.alliance].name : ALLIANCES[share.airline.alliance].nameEn}}</text>
+                      </view>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>
