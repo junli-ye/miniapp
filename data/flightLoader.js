@@ -1,31 +1,32 @@
 import { ALLIANCES, AIRLINES, lastUpdated } from './constants';
 import { FLIGHTS } from './flightData';
 
-// 处理航班数据
-const processFlightData = (flight) => {
-  // 添加航空公司完整信息
-  const airline = AIRLINES[flight.airlineCode];
-  if (!airline) {
-    console.warn(`Airline not found: ${flight.airlineCode}`);
-    return null;
-  }
-  flight.airline = airline;
+// 处理航班数据，提供容错并标准化结构
+const processFlightData = (flightRaw) => {
+  const flight = Object.assign({}, flightRaw); // shallow copy
 
-  // 处理代码共享航班
-  if (flight.codeshare && flight.codeshare.length) {
-    flight.codeshare = flight.codeshare
-      .map(share => {
-        const codeshareAirline = AIRLINES[share.airlineCode];
-        if (!codeshareAirline) {
-          console.warn(`Codeshare airline not found: ${share.airlineCode}`);
-          return null;
-        }
-        return {
-          ...share,
-          airline: codeshareAirline
-        };
-      })
-      .filter(Boolean); // 移除无效的代码共享航班
+  // Ensure nested shapes exist
+  flight.destination = flight.destination || { iata: flight.destinationIATA || '', airportZh: flight.destinationAirportZh || '', airportEn: flight.destinationAirportEn || '' };
+  flight.schedule = flight.schedule || { depTimeLocal: flight.depTimeLocal || '', days: flight.days || '' };
+  flight.country = flight.country || { zh: flight.countryZh || '', en: flight.countryEn || '' };
+
+  // Attach airline info with fallback
+  const airlineInfo = AIRLINES[flight.airlineCode];
+  if (airlineInfo) {
+    flight.airline = airlineInfo;
+  } else {
+    console.warn(`Airline not found: ${flight.airlineCode}`);
+    flight.airline = { code: flight.airlineCode || '', nameZh: flight.airlineCode || '', nameEn: flight.airlineCode || '', logo: '' };
+  }
+
+  // Codeshare processing with fallback
+  if (Array.isArray(flight.codeshare)) {
+    flight.codeshare = flight.codeshare.map(cs => {
+      const csAirline = AIRLINES[cs.airlineCode] || { code: cs.airlineCode || '', nameZh: cs.airlineCode || '', nameEn: cs.airlineCode || '', logo: '' };
+      return { ...cs, airline: csAirline };
+    });
+  } else {
+    flight.codeshare = [];
   }
 
   return flight;
@@ -33,4 +34,4 @@ const processFlightData = (flight) => {
 
 // 导出处理后的数据
 export { ALLIANCES, lastUpdated };
-export const flights = FLIGHTS.map(processFlightData).filter(Boolean); // 移除无效的航班
+export const flights = Array.isArray(FLIGHTS) ? FLIGHTS.map(processFlightData).filter(Boolean) : []; // 移除无效的航班

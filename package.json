@@ -1,0 +1,10 @@
+{
+  "name": "miniapp",
+  "version": "1.0.0",
+  "scripts": {
+    "build-data": "node scripts/json-to-js.js"
+  },
+  "dependencies": {
+    "wx-server": "^0.0.1"
+  }
+}

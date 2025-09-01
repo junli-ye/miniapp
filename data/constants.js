@@ -69,5 +69,12 @@ export const AIRLINES = {
     nameEn: 'Singapore Airlines',
     logo: '/images/airlines/SQ.png',
     alliance: 'STAR'
+  },
+  'ZH': {
+    code: 'SQ',
+    nameZh: '深圳航空',
+    nameEn: 'Shenzhen Airlines',
+    logo: '/images/airlines/ZH.png',
+    alliance: 'STAR'
   }
 };

@@ -1,0 +1,71 @@
+{
+  "3U": {
+    "code": "3U",
+    "nameZh": "四川航空",
+    "nameEn": "Sichuan Airlines",
+    "logo": "../images/airlines/3U.png"
+  },
+  "CA": {
+    "code": "CA",
+    "nameZh": "中国国际航空",
+    "nameEn": "Air China",
+    "logo": "../images/airlines/CA.png",
+    "alliance": "STAR"
+  },
+  "MU": {
+    "code": "MU",
+    "nameZh": "东方航空",
+    "nameEn": "China Eastern",
+    "logo": "../images/airlines/MU.png",
+    "alliance": "SKYTEAM"
+  },
+  "NH": {
+    "code": "NH",
+    "nameZh": "全日空",
+    "nameEn": "ANA",
+    "logo": "../images/airlines/NH.png",
+    "alliance": "STAR"
+  },
+  "OZ": {
+    "code": "OZ",
+    "nameZh": "韩亚航空",
+    "nameEn": "Asiana Airlines",
+    "logo": "../images/airlines/OZ.png",
+    "alliance": "STAR"
+  },
+  "LH": {
+    "code": "LH",
+    "nameZh": "汉莎航空",
+    "nameEn": "Lufthansa",
+    "logo": "../images/airlines/LH.png",
+    "alliance": "STAR"
+  },
+  "JL": {
+    "code": "JL",
+    "nameZh": "日本航空",
+    "nameEn": "Japan Airlines",
+    "logo": "../images/airlines/JL.png",
+    "alliance": "ONEWORLD"
+  },
+  "SQ": {
+    "code": "SQ",
+    "nameZh": "新加坡航空",
+    "nameEn": "Singapore Airlines",
+    "logo": "../images/airlines/SQ.png",
+    "alliance": "STAR"
+  },
+  "UA": {
+    "code": "UA",
+    "nameZh": "美联航",
+    "nameEn": "United Airlines",
+    "logo": "../images/airlines/UA.png",
+    "alliance": "STAR"
+  },
+  "ET": {
+    "code": "ET",
+    "nameZh": "埃塞俄比亚航空",
+    "nameEn": "Ethiopian Airlines",
+    "logo": "../images/airlines/ET.png",
+    "alliance": "STAR"
+  }
+}

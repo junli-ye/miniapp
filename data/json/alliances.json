@@ -1,0 +1,17 @@
+{
+  "STAR": { 
+    "name": "星空联盟", 
+    "nameEn": "Star Alliance", 
+    "logo": "../images/alliances/star.png"
+  },
+  "SKYTEAM": { 
+    "name": "天合联盟", 
+    "nameEn": "SkyTeam", 
+    "logo": "../images/alliances/skyteam.png"
+  },
+  "ONEWORLD": { 
+    "name": "寰宇一家", 
+    "nameEn": "Oneworld", 
+    "logo": "../images/alliances/oneworld.png"
+  }
+}
