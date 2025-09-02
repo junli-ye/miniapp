@@ -40,13 +40,58 @@ Page({
     loading: false,
     showBackTop: false,
     filterPanelVisible: true, // 筛选面板显示状态
+    error: false,
   },
 
   onLoad() {
-    const source = Array.isArray(PROCESSED_FLIGHTS) ? PROCESSED_FLIGHTS : [];
-    this.setData({ originalFlights: source, flights: source });
-    this.initFilters();
-    this.filterFlights();
+    // prefer cloud data; fall back to local processed flights
+    this.loadFlights(false).then(() => {
+      this.initFilters();
+      this.filterFlights();
+    }).catch(() => {
+      // ensure UI still initializes with fallback
+      const source = Array.isArray(PROCESSED_FLIGHTS) ? PROCESSED_FLIGHTS : [];
+      this.setData({ originalFlights: source, flights: source }, () => {
+        this.initFilters();
+        this.filterFlights();
+      });
+    });
+  },
+
+  // load flights from cloud with caching and fallback
+  async loadFlights(force = false) {
+    this.setData({ loading: true, error: false });
+    const cacheKey = 'cachedFlights';
+    try {
+      const cached = wx.getStorageSync(cacheKey) || null;
+      const now = Date.now();
+      const maxAge = 1000 * 60 * 60; // 1 hour
+      if (!force && cached && (now - (cached.fetchedAt || 0) < maxAge) && Array.isArray(cached.flights)) {
+        this.setData({ originalFlights: cached.flights, flights: cached.flights, lastUpdated: cached.lastUpdated || this.data.lastUpdated, loading: false });
+        return;
+      }
+
+      // call cloud function
+      const region = this.data.currentRegion || '';
+      const page = 1;
+      const pageSize = 200; // reasonable upper bound
+      const res = await wx.cloud.callFunction({ name: 'getFlights3', data: { region, page, pageSize } });
+      if (res && res.result && !res.result.error && Array.isArray(res.result.flights)) {
+        const flights = res.result.flights;
+        const last = res.result.lastUpdated || new Date().toISOString();
+        wx.setStorageSync(cacheKey, { flights, total: res.result.total || flights.length, lastUpdated: last, fetchedAt: Date.now() });
+        this.setData({ originalFlights: flights, flights, lastUpdated: last, loading: false });
+        return;
+      }
+
+      // fallback to processed local data
+      throw new Error((res && res.result && res.result.message) || 'invalid cloud response');
+    } catch (err) {
+      console.warn('loadFlights failed, falling back to local data:', err);
+      const source = Array.isArray(PROCESSED_FLIGHTS) ? PROCESSED_FLIGHTS : [];
+      this.setData({ originalFlights: source, flights: source, loading: false, error: true });
+      throw err;
+    }
   },
 
   // 初始化筛选项
@@ -55,7 +100,7 @@ Page({
     const countries = unique(originalFlights.map(f => getText(f.country, '', lang)).filter(Boolean));
     const airlines = unique(originalFlights.map(f => getText(f.airline, 'name', lang)).filter(Boolean));
     const days = unique(originalFlights.map(f => (f.schedule && f.schedule.days) || '').filter(Boolean));
-    
+
     this.setData({
       countryList: [lang === 'zh' ? '全部' : 'All', ...countries],
       airlineList: [lang === 'zh' ? '全部' : 'All', ...airlines],
@@ -75,8 +120,15 @@ Page({
   // 切换区域
   switchRegion(e) {
     const { region } = e.currentTarget.dataset
-    this.setData({ currentRegion: region }, () => {
-      this.filterFlights()
+    this.setData({ currentRegion: region, loading: true }, () => {
+      // reload cloud data for the new region
+      this.loadFlights(true).then(() => {
+        this.initFilters();
+        this.filterFlights();
+      }).catch(() => {
+        this.initFilters();
+        this.filterFlights();
+      });
     })
   },
 
@@ -108,9 +160,13 @@ Page({
   // 下拉刷新
   onPullDownRefresh() {
     this.setData({ loading: true })
-    // restore from original then filter
-    this.setData({ flights: this.data.originalFlights }, () => {
+    // pull from cloud
+    this.loadFlights(true).then(() => {
+      this.initFilters();
       this.filterFlights();
+      wx.stopPullDownRefresh();
+      this.setData({ loading: false });
+    }).catch(() => {
       wx.stopPullDownRefresh();
       this.setData({ loading: false });
     });
