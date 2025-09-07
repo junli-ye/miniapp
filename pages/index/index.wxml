@@ -105,23 +105,25 @@
         </view>
         
         <view class="card-body">
-          <view class="destination-info">
-            <view class="airport-info">
+          <!-- 第一行：城市名 + 时间 -->
+          <view class="info-row">
+            <view class="destination-primary">
               <text class="city">{{lang === 'zh' ? item.destination.airportZh : item.destination.airportEn}}</text>
               <text class="iata">({{item.destination.iata}})</text>
             </view>
-            <text class="country">{{lang === 'zh' ? item.country.zh : item.country.en}}</text>
+            <text class="time">{{item.schedule.depTimeLocal}}</text>
           </view>
           
-          <view class="schedule-info">
-            <view class="time-section">
-              <text class="time">{{item.schedule.depTimeLocal}}</text>
-              <text class="days">{{item.schedule.days}}</text>
-            </view>
-            <text class="status {{item.remarks === (lang === 'zh' ? '正在执行' : 'Active') ? 'active' : ''}}">
-              {{lang === 'zh' ? item.remarks : item.remarksEn || item.remarks}}
-            </text>
+          <!-- 第二行：国家 + 班期 -->
+          <view class="info-row">
+            <text class="country">{{lang === 'zh' ? item.country.zh : item.country.en}}</text>
+            <text class="days">{{item.schedule.days}}</text>
           </view>
+          
+          <!-- 备注区（如果有的话） -->
+          <text wx:if="{{item.remarks && item.remarks !== '正在执行' && item.remarks !== 'Active'}}" class="remarks">
+            {{lang === 'zh' ? item.remarks : item.remarksEn || item.remarks}}
+          </text>
         </view>
       </view>
 
@@ -160,5 +162,16 @@
         </view>
       </block>
     </view>
+  </view>
+</view>
+
+<!-- 页面底部声明 -->
+<view class="footer">
+  <view class="copyright">
+    <text>{{lang === 'zh' ? '@CFA成都飞友会 收集整理' : '@CFA Chengdu'}}</text>
+    <text class="contact-link" bindtap="showContactInfo">{{lang === 'zh' ? ' | 联系我们' : ' | Contact Us'}}</text>
+  </view>
+  <view class="disclaimer">
+    <text>{{lang === 'zh' ? '航班信息仅做参考，请以航空公司实际计划为准，购票请使用正规渠道' : 'Flight information is for reference only. Please refer to airlines official schedules and use official channels for booking.'}}</text>
   </view>
 </view>

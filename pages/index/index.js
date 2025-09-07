@@ -2,10 +2,11 @@ import { flights as PROCESSED_FLIGHTS, lastUpdated, ALLIANCES } from '../../data
 
 const REGIONS = [
   { key: 'ASIA', name: '亚洲', nameEn: 'Asia' },
-  { key: 'HMT', name: '港澳台', nameEn: 'H/M/T' },
   { key: 'EME', name: '欧洲和中东', nameEn: 'Europe & Middle East' },
   { key: 'NA', name: '美洲', nameEn: 'America' },
-  { key: 'AFRICA', name: '非洲', nameEn: 'Africa' }
+  { key: 'OCEANIA', name: '大洋洲', nameEn: 'Oceania' }, // 新增大洋洲
+  { key: 'AFRICA', name: '非洲', nameEn: 'Africa' },
+  { key: 'HMT', name: '港澳台地区', nameEn: 'Hong Kong/Macau/Taiwan' }
 ]
 
 // 帮助函数
@@ -34,12 +35,13 @@ Page({
     countryList: [],
     airlineList: [],
     daysList: [],
+    weekdays: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], // 新增
     selectedCountry: '',
     selectedAirline: '',
     selectedDays: '',
     loading: false,
     showBackTop: false,
-    filterPanelVisible: true, // 筛选面板显示状态
+    filterPanelVisible: false, // 筛选面板显示状态
     error: false,
   },
 
@@ -99,13 +101,28 @@ Page({
     const { lang, originalFlights } = this.data;
     const countries = unique(originalFlights.map(f => getText(f.country, '', lang)).filter(Boolean));
     const airlines = unique(originalFlights.map(f => getText(f.airline, 'name', lang)).filter(Boolean));
-    const days = unique(originalFlights.map(f => (f.schedule && f.schedule.days) || '').filter(Boolean));
+    
+    // 原有的班期数据
+    const originalDays = unique(originalFlights.map(f => (f.schedule && f.schedule.days) || '').filter(Boolean));
+    
+    // 根据语言设置星期选项
+    const weekdays = lang === 'zh' ? 
+      ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] :
+      ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // 合并原有班期和星期选项
+    const allDays = [
+      lang === 'zh' ? '全部' : 'All',
+      ...weekdays,        // 添加多语言星期选项
+      ...originalDays     // 保留原有班期（如"135", "每天"等）
+    ];
 
     this.setData({
       countryList: [lang === 'zh' ? '全部' : 'All', ...countries],
       airlineList: [lang === 'zh' ? '全部' : 'All', ...airlines],
-      daysList: [lang === 'zh' ? '全部' : 'All', ...days]
-    })
+      daysList: allDays,  // 使用合并后的列表
+      weekdays: weekdays  // 更新 weekdays 以供匹配逻辑使用
+    });
   },
 
   // 切换语言
@@ -216,8 +233,15 @@ Page({
     if (selectedCountry || selectedAirline || selectedDays) {
       filtered = filtered.filter(f => {
         const countryMatch = !selectedCountry || getText(f.country, '', lang) === selectedCountry;
-        const airlineMatch = !selectedAirline || getText(f.airline, 'name', lang) === selectedAirline;
-        const daysMatch = !selectedDays || ((f.schedule && f.schedule.days) === selectedDays);
+        const airlineMatch = !selectedAirline || getText(f.airline, 'name', lang) === selectedAirlineair;
+        
+        // 改进的班期匹配逻辑
+        let daysMatch = true;
+        if (selectedDays) {
+          const scheduleStr = (f.schedule && f.schedule.days) || '';
+          daysMatch = this.matchesSchedule(scheduleStr, selectedDays);
+        }
+        
         return countryMatch && airlineMatch && daysMatch;
       });
     }
@@ -225,5 +249,65 @@ Page({
     filtered.sort((a, b) => ((a.schedule && a.schedule.depTimeLocal) || '').localeCompare((b.schedule && b.schedule.depTimeLocal) || ''));
 
     this.setData({ flights: filtered, loading: false });
+  },
+
+  // 显示联系信息弹窗
+  showContactInfo() {
+    const { lang } = this.data;
+    wx.showModal({
+      title: lang === 'zh' ? '联系我们' : 'Contact Us',
+      content: lang === 'zh' ? 
+        '邮箱：me@junliye.fr\n\n点击确定复制邮箱地址' : 
+        'Email: me@junliye.fr\n\nTap OK to copy email address',
+      confirmText: lang === 'zh' ? '复制邮箱' : 'Copy Email',
+      cancelText: lang === 'zh' ? '取消' : 'Cancel',
+      success: (res) => {
+        if (res.confirm) {
+          wx.setClipboardData({
+            data: 'me@junliye.fr',
+            success: () => {
+              wx.showToast({
+                title: lang === 'zh' ? '邮箱已复制' : 'Email copied',
+                icon: 'success',
+                duration: 2000
+              });
+            }
+          });
+        }
+      }
+    });
+  },
+
+  // 新增班期匹配方法
+  matchesSchedule(scheduleStr, selectedDays) {
+    if (!scheduleStr || !selectedDays) return true;
+    
+    // 如果选择的是原有的班期格式（如"135", "每天"），直接匹配
+    if (scheduleStr === selectedDays) {
+      return true;
+    }
+    
+    // 支持中英文星期映射
+    const weekdayMap = {
+      // 中文映射
+      '周一': '1', '周二': '2', '周三': '3', '周四': '4', 
+      '周五': '5', '周六': '6', '周日': '7',
+      // 英文映射
+      'Monday': '1', 'Tuesday': '2', 'Wednesday': '3', 'Thursday': '4',
+      'Friday': '5', 'Saturday': '6', 'Sunday': '7'
+    };
+    
+    const targetNum = weekdayMap[selectedDays];
+    if (!targetNum) {
+      return false; // 未知的选择
+    }
+    
+    // 处理常见的班期格式
+    if (scheduleStr === '每天' || scheduleStr === '7' || scheduleStr === '1234567') {
+      return true; // 每天运行的航班匹配所有星期
+    }
+    
+    // 检查数字格式班期（如 "135" 表示周一三五）
+    return scheduleStr.includes(targetNum);
   }
 });
